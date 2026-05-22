@@ -198,6 +198,8 @@ fun CameraWithOverlay() {
     var layer2Offset by remember { mutableStateOf(Offset.Zero) }
     var layer2Rotation by remember { mutableFloatStateOf(0f) }
     var activeLayer by remember { mutableIntStateOf(1) }
+    var layer1Locked by remember { mutableStateOf(false) }
+    var layer2Locked by remember { mutableStateOf(false) }
 
     // ── Camera states ──
     var useFrontCamera by remember { mutableStateOf(false) }
@@ -207,7 +209,6 @@ fun CameraWithOverlay() {
     var imageCaptureUseCase by remember { mutableStateOf<ImageCapture?>(null) }
 
     // ── UI states ──
-    var imageLocked by remember { mutableStateOf(false) }
     var activeToolPanel by remember { mutableStateOf(ToolPanel.NONE) }
     var showGrid by remember { mutableStateOf(false) }
     var gridCount by remember { mutableIntStateOf(9) }
@@ -216,6 +217,7 @@ fun CameraWithOverlay() {
     var showCalibration by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
     var toolbarExpanded by remember { mutableStateOf(true) }
+    var showLayersDropdown by remember { mutableStateOf(false) }
 
     // Colors based on dark mode
     val uiBg = if (darkMode) Color(0xFF1E1E1E) else Color.White
@@ -234,7 +236,7 @@ fun CameraWithOverlay() {
                 overlayRotation = 0f; overlayFlipped = false; overlayBrightness = 0f
                 overlayContrast = 1f; overlayOutline = false; outlineBitmap = null
             }
-            imageLocked = false
+            if (activeLayer == 1) layer1Locked = false else layer2Locked = false
         }
     }
 
@@ -339,7 +341,7 @@ fun CameraWithOverlay() {
                 ImageRequest.Builder(context).data(uri).crossfade(true).build()
             )
             val state2 = rememberTransformableState { z, o, r ->
-                if (!imageLocked && activeLayer == 2) {
+                if (!layer2Locked && activeLayer == 2) {
                     layer2Scale = (layer2Scale * z).coerceIn(0.1f, 5f)
                     layer2Offset = Offset(layer2Offset.x + o.x, layer2Offset.y + o.y)
                     layer2Rotation += r
@@ -351,7 +353,7 @@ fun CameraWithOverlay() {
                     .offset { IntOffset(layer2Offset.x.roundToInt(), layer2Offset.y.roundToInt()) }
                     .graphicsLayer(scaleX = layer2Scale, scaleY = layer2Scale, rotationZ = layer2Rotation)
                     .alpha(layer2Opacity)
-                    .then(if (!imageLocked && activeLayer == 2) Modifier.transformable(state2) else Modifier),
+                    .then(if (!layer2Locked && activeLayer == 2) Modifier.transformable(state2) else Modifier),
                 contentScale = ContentScale.Fit
             )
         }
@@ -359,7 +361,7 @@ fun CameraWithOverlay() {
         // ── Overlay Layer 1 ──
         overlayImageUri?.let { uri ->
             val transformState = rememberTransformableState { zoomChange, offsetChange, rotationChange ->
-                if (!imageLocked && activeLayer == 1) {
+                if (!layer1Locked && activeLayer == 1) {
                     overlayScale = (overlayScale * zoomChange).coerceIn(0.1f, 5f)
                     overlayOffset = Offset(overlayOffset.x + offsetChange.x, overlayOffset.y + offsetChange.y)
                     overlayRotation += rotationChange
@@ -376,7 +378,7 @@ fun CameraWithOverlay() {
                             scaleY = overlayScale, rotationZ = overlayRotation
                         )
                         .alpha(overlayOpacity)
-                        .then(if (!imageLocked && activeLayer == 1) Modifier.transformable(transformState) else Modifier),
+                        .then(if (!layer1Locked && activeLayer == 1) Modifier.transformable(transformState) else Modifier),
                     contentScale = ContentScale.Fit
                 )
             } else {
@@ -400,7 +402,7 @@ fun CameraWithOverlay() {
                             scaleY = overlayScale, rotationZ = overlayRotation
                         )
                         .alpha(overlayOpacity)
-                        .then(if (!imageLocked && activeLayer == 1) Modifier.transformable(transformState) else Modifier),
+                        .then(if (!layer1Locked && activeLayer == 1) Modifier.transformable(transformState) else Modifier),
                     contentScale = ContentScale.Fit,
                     colorFilter = brightnessMatrix
                 )
@@ -441,12 +443,17 @@ fun CameraWithOverlay() {
                     )
                     Spacer(Modifier.width(8.dp))
                     IconButton(
-                        onClick = { imageLocked = !imageLocked },
+                        onClick = {
+                            if (activeLayer == 1) layer1Locked = !layer1Locked
+                            else layer2Locked = !layer2Locked
+                        },
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            if (imageLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                            "Bloquear", tint = if (imageLocked) uiFg else uiSecondary,
+                            if ((activeLayer == 1 && layer1Locked) || (activeLayer == 2 && layer2Locked))
+                                Icons.Default.Lock else Icons.Default.LockOpen,
+                            "Bloquear",
+                            tint = if ((activeLayer == 1 && layer1Locked) || (activeLayer == 2 && layer2Locked)) uiFg else uiSecondary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -454,14 +461,118 @@ fun CameraWithOverlay() {
             }
 
             // Layers icon
-            IconButton(
-                onClick = {
-                    activeLayer = if (activeLayer == 1) 2 else 1
-                    Toast.makeText(context, "Capa $activeLayer activa", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.size(44.dp).background(uiBg.copy(0.9f), CircleShape)
-            ) {
-                Icon(Icons.Default.Layers, "Capas", tint = uiFg, modifier = Modifier.size(22.dp))
+            Box {
+                IconButton(
+                    onClick = { showLayersDropdown = !showLayersDropdown },
+                    modifier = Modifier.size(44.dp).background(uiBg.copy(0.9f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Layers, "Capas", tint = uiFg, modifier = Modifier.size(22.dp))
+                }
+
+                // Layers dropdown
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showLayersDropdown,
+                    enter = fadeIn() + slideInVertically { -it },
+                    exit = fadeOut() + slideOutVertically { -it },
+                    modifier = Modifier.offset(x = (-120).dp, y = 50.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .width(180.dp)
+                            .background(uiBg, RoundedCornerShape(16.dp))
+                            .padding(8.dp)
+                    ) {
+                        // Layer 1 row
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (activeLayer == 1) uiSurface else Color.Transparent)
+                                .clickable { activeLayer = 1 }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(8.dp)
+                                        .background(
+                                            if (overlayImageUri != null) Color(0xFF4CAF50) else uiSecondary.copy(0.3f),
+                                            CircleShape
+                                        )
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Layer 1", color = uiFg, fontSize = 13.sp,
+                                    fontWeight = if (activeLayer == 1) FontWeight.Bold else FontWeight.Normal)
+                            }
+                            IconButton(
+                                onClick = { layer1Locked = !layer1Locked },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    if (layer1Locked) Icons.Default.Lock else Icons.Default.LockOpen,
+                                    "Lock L1",
+                                    tint = if (layer1Locked) uiFg else uiSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(2.dp))
+
+                        // Layer 2 row
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (activeLayer == 2) uiSurface else Color.Transparent)
+                                .clickable { activeLayer = 2 }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(8.dp)
+                                        .background(
+                                            if (layer2Uri != null) Color(0xFF4CAF50) else uiSecondary.copy(0.3f),
+                                            CircleShape
+                                        )
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Layer 2", color = uiFg, fontSize = 13.sp,
+                                    fontWeight = if (activeLayer == 2) FontWeight.Bold else FontWeight.Normal)
+                            }
+                            IconButton(
+                                onClick = { layer2Locked = !layer2Locked },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    if (layer2Locked) Icons.Default.Lock else Icons.Default.LockOpen,
+                                    "Lock L2",
+                                    tint = if (layer2Locked) uiFg else uiSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(4.dp))
+
+                        // Add image to active layer
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    showLayersDropdown = false
+                                    imagePickerLauncher.launch("image/*")
+                                }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Image, null, tint = uiSecondary, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Añadir a Capa $activeLayer", color = uiSecondary, fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         }
 
@@ -564,11 +675,11 @@ fun CameraWithOverlay() {
                         }
                         Spacer(Modifier.height(8.dp))
                         SliderRow("Scale", "${(overlayScale * 100).toInt()}%", overlayScale, 0.1f, 5f, uiFg) {
-                            if (!imageLocked) overlayScale = it
+                            if (!layer1Locked) overlayScale = it
                         }
                         Spacer(Modifier.height(8.dp))
                         SliderRow("Rotation", "${overlayRotation.toInt()}°", overlayRotation, 0f, 360f, uiFg) {
-                            if (!imageLocked) overlayRotation = it
+                            if (!layer1Locked) overlayRotation = it
                         }
                     }
                     ToolPanel.GRID -> {
@@ -758,7 +869,7 @@ fun CameraWithOverlay() {
                     overlayRotation = 0f; overlayFlipped = false; overlayBrightness = 0f
                     overlayContrast = 1f; overlayOutline = false; outlineBitmap = null
                 }
-                imageLocked = false
+                if (activeLayer == 1) layer1Locked = false else layer2Locked = false
                 showBottomSheet = false
             }
         }
