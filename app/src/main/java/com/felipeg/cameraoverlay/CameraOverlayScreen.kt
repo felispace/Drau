@@ -142,116 +142,30 @@ enum class MenuSection { NONE, MAIN, ARCHIVO, HERRAMIENTAS, PREFERENCIAS, AYUDA 
 // ─── App screen state ───
 enum class AppScreen { HOME, CAMERA }
 
-// ─── Home Screen (kawaii style) ───
+// ─── Home Screen (kawaii style — full reference image as background) ───
 @Composable
 fun HomeScreen(onStartDrawing: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background image
+        // Full-screen reference image
         Image(
             painter = painterResource(R.drawable.home_background),
-            contentDescription = null,
+            contentDescription = "Drau Home",
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.FillBounds
         )
 
-        // Bottom content overlay
-        Column(
+        // Transparent clickable area over "Start Drawing" button (~68% from top, centered)
+        Box(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Bottom
+            contentAlignment = Alignment.BottomCenter
         ) {
-            // Start Drawing button
             Box(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(28.dp))
-                        .border(1.dp, Color(0xFFE0D4F5), RoundedCornerShape(28.dp))
-                        .clickable(onClick = onStartDrawing)
-                        .padding(horizontal = 24.dp, vertical = 18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Image, null,
-                        tint = Color(0xFFE91E8C),
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(Modifier.width(14.dp))
-                    Text(
-                        "Start Drawing",
-                        color = Color.Black, fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.width(14.dp))
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowForward, null,
-                        tint = Color(0xFF999999),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Templates + Recent row (dummy)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Templates
-                Row(
-                    modifier = Modifier.weight(1f)
-                        .background(Color.White.copy(0.95f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("⭐", fontSize = 22.sp)
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text("Templates", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text("Browse drawing ideas", color = Color.Gray, fontSize = 11.sp)
-                    }
-                }
-                // Recent
-                Row(
-                    modifier = Modifier.weight(1f)
-                        .background(Color.White.copy(0.95f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("\uD83D\uDD52", fontSize = 22.sp)
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text("Recent", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text("View your projects", color = Color.Gray, fontSize = 11.sp)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // Bottom nav bar (dummy)
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                    .padding(horizontal = 40.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Home, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(24.dp))
-                    Text("Home", color = Color(0xFF7C4DFF), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Work, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
-                    Text("Projects", color = Color.Gray, fontSize = 11.sp)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Settings, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
-                    Text("Settings", color = Color.Gray, fontSize = 11.sp)
-                }
-            }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 36.dp, end = 36.dp, bottom = 160.dp)
+                    .height(60.dp)
+                    .clickable(onClick = onStartDrawing)
+            )
         }
     }
 }
