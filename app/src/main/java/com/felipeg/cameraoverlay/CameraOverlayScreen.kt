@@ -717,16 +717,15 @@ fun CameraWithOverlay() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Image button
-            Row(
+            Box(
                 modifier = Modifier
-                    .background(uiBg.copy(0.9f), RoundedCornerShape(22.dp))
-                    .clickable { imagePickerLauncher.launch("image/*") }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(56.dp)
+                    .background(uiBg.copy(0.9f), CircleShape)
+                    .border(2.dp, uiSecondary.copy(0.2f), CircleShape)
+                    .clickable { imagePickerLauncher.launch("image/*") },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Image, "Imagen", tint = uiFg, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Image", color = uiFg, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Icon(Icons.Default.Image, "Imagen", tint = uiFg, modifier = Modifier.size(28.dp))
             }
 
             // Capture button (circle)
