@@ -67,6 +67,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GridOn
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
@@ -76,10 +77,12 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.FlipCameraAndroid
 
 import androidx.compose.material3.Icon
@@ -110,6 +113,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,6 +126,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.delay
@@ -134,21 +139,33 @@ enum class ToolPanel { NONE, OPACITY, ADJUST, GRID }
 // ─── Menu section for "..." menu ───
 enum class MenuSection { NONE, MAIN, ARCHIVO, HERRAMIENTAS, PREFERENCIAS, AYUDA }
 
-// ─── Splash Screen ───
+// ─── App screen state ───
+enum class AppScreen { HOME, CAMERA }
+
+// ─── Home Screen (kawaii style — full reference image as background) ───
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
-    LaunchedEffect(Unit) {
-        delay(2000)
-        onFinished()
-    }
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color.White),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Drau", color = Color.Black, fontSize = 48.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
-            Spacer(Modifier.height(8.dp))
-            Text("Dibuja con precisión", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Light)
+fun HomeScreen(onStartDrawing: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Full-screen reference image
+        Image(
+            painter = painterResource(R.drawable.home_background),
+            contentDescription = "Drau Home",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
+
+        // Transparent clickable area over "Start Drawing" button (~68% from top, centered)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 36.dp, end = 36.dp, bottom = 160.dp)
+                    .height(60.dp)
+                    .clickable(onClick = onStartDrawing)
+            )
         }
     }
 }
@@ -157,19 +174,28 @@ fun SplashScreen(onFinished: () -> Unit) {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraOverlayScreen() {
-    var showSplash by remember { mutableStateOf(true) }
-    if (showSplash) { SplashScreen { showSplash = false }; return }
+    var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
-    LaunchedEffect(Unit) {
-        if (!cameraPermissionState.status.isGranted) cameraPermissionState.launchPermissionRequest()
-    }
 
-    when {
-        cameraPermissionState.status.isGranted -> CameraWithOverlay()
-        cameraPermissionState.status.shouldShowRationale ->
-            PermissionRationale { cameraPermissionState.launchPermissionRequest() }
-        else -> PermissionDenied()
+    when (currentScreen) {
+        AppScreen.HOME -> {
+            HomeScreen(onStartDrawing = {
+                if (cameraPermissionState.status.isGranted) {
+                    currentScreen = AppScreen.CAMERA
+                } else {
+                    cameraPermissionState.launchPermissionRequest()
+                }
+            })
+
+            // Watch for permission granted after request
+            LaunchedEffect(cameraPermissionState.status.isGranted) {
+                if (cameraPermissionState.status.isGranted && currentScreen == AppScreen.HOME) {
+                    currentScreen = AppScreen.CAMERA
+                }
+            }
+        }
+        AppScreen.CAMERA -> CameraWithOverlay()
     }
 }
 
@@ -717,16 +743,15 @@ fun CameraWithOverlay() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Image button
-            Row(
+            Box(
                 modifier = Modifier
-                    .background(uiBg.copy(0.9f), RoundedCornerShape(22.dp))
-                    .clickable { imagePickerLauncher.launch("image/*") }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(56.dp)
+                    .background(uiBg.copy(0.9f), CircleShape)
+                    .border(2.dp, uiSecondary.copy(0.2f), CircleShape)
+                    .clickable { imagePickerLauncher.launch("image/*") },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Image, "Imagen", tint = uiFg, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("Image", color = uiFg, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Icon(Icons.Default.Image, "Imagen", tint = uiFg, modifier = Modifier.size(28.dp))
             }
 
             // Capture button (circle)
