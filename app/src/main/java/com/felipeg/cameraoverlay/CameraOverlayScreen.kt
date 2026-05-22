@@ -67,6 +67,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.GridOn
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
@@ -76,10 +77,12 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.FlipCameraAndroid
 
 import androidx.compose.material3.Icon
@@ -110,6 +113,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,6 +126,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.delay
@@ -134,21 +139,119 @@ enum class ToolPanel { NONE, OPACITY, ADJUST, GRID }
 // ─── Menu section for "..." menu ───
 enum class MenuSection { NONE, MAIN, ARCHIVO, HERRAMIENTAS, PREFERENCIAS, AYUDA }
 
-// ─── Splash Screen ───
+// ─── App screen state ───
+enum class AppScreen { HOME, CAMERA }
+
+// ─── Home Screen (kawaii style) ───
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
-    LaunchedEffect(Unit) {
-        delay(2000)
-        onFinished()
-    }
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color.White),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Drau", color = Color.Black, fontSize = 48.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
-            Spacer(Modifier.height(8.dp))
-            Text("Dibuja con precisión", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Light)
+fun HomeScreen(onStartDrawing: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background image
+        Image(
+            painter = painterResource(R.drawable.home_background),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Bottom content overlay
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Bottom
+        ) {
+            // Start Drawing button
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(28.dp))
+                        .border(1.dp, Color(0xFFE0D4F5), RoundedCornerShape(28.dp))
+                        .clickable(onClick = onStartDrawing)
+                        .padding(horizontal = 24.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Image, null,
+                        tint = Color(0xFFE91E8C),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        "Start Drawing",
+                        color = Color.Black, fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowForward, null,
+                        tint = Color(0xFF999999),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Templates + Recent row (dummy)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Templates
+                Row(
+                    modifier = Modifier.weight(1f)
+                        .background(Color.White.copy(0.95f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("⭐", fontSize = 22.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text("Templates", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("Browse drawing ideas", color = Color.Gray, fontSize = 11.sp)
+                    }
+                }
+                // Recent
+                Row(
+                    modifier = Modifier.weight(1f)
+                        .background(Color.White.copy(0.95f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("\uD83D\uDD52", fontSize = 22.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text("Recent", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("View your projects", color = Color.Gray, fontSize = 11.sp)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Bottom nav bar (dummy)
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .padding(horizontal = 40.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Home, null, tint = Color(0xFF7C4DFF), modifier = Modifier.size(24.dp))
+                    Text("Home", color = Color(0xFF7C4DFF), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Work, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+                    Text("Projects", color = Color.Gray, fontSize = 11.sp)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Settings, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+                    Text("Settings", color = Color.Gray, fontSize = 11.sp)
+                }
+            }
         }
     }
 }
@@ -157,14 +260,28 @@ fun SplashScreen(onFinished: () -> Unit) {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraOverlayScreen() {
-    var showSplash by remember { mutableStateOf(true) }
-    if (showSplash) { SplashScreen { showSplash = false }; return }
+    var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    when {
-        cameraPermissionState.status.isGranted -> CameraWithOverlay()
-        else -> PermissionRationale { cameraPermissionState.launchPermissionRequest() }
+    when (currentScreen) {
+        AppScreen.HOME -> {
+            HomeScreen(onStartDrawing = {
+                if (cameraPermissionState.status.isGranted) {
+                    currentScreen = AppScreen.CAMERA
+                } else {
+                    cameraPermissionState.launchPermissionRequest()
+                }
+            })
+
+            // Watch for permission granted after request
+            LaunchedEffect(cameraPermissionState.status.isGranted) {
+                if (cameraPermissionState.status.isGranted && currentScreen == AppScreen.HOME) {
+                    currentScreen = AppScreen.CAMERA
+                }
+            }
+        }
+        AppScreen.CAMERA -> CameraWithOverlay()
     }
 }
 
