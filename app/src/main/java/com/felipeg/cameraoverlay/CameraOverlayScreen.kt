@@ -161,15 +161,10 @@ fun CameraOverlayScreen() {
     if (showSplash) { SplashScreen { showSplash = false }; return }
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
-    LaunchedEffect(Unit) {
-        if (!cameraPermissionState.status.isGranted) cameraPermissionState.launchPermissionRequest()
-    }
 
     when {
         cameraPermissionState.status.isGranted -> CameraWithOverlay()
-        cameraPermissionState.status.shouldShowRationale ->
-            PermissionRationale { cameraPermissionState.launchPermissionRequest() }
-        else -> PermissionDenied()
+        else -> PermissionRationale { cameraPermissionState.launchPermissionRequest() }
     }
 }
 
