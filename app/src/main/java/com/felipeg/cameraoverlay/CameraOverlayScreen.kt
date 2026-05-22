@@ -28,7 +28,9 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,6 +56,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Help
 
 import androidx.compose.material.icons.filled.CameraAlt
@@ -211,6 +215,7 @@ fun CameraWithOverlay() {
     var darkMode by remember { mutableStateOf(false) }
     var showCalibration by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var toolbarExpanded by remember { mutableStateOf(true) }
 
     // Colors based on dark mode
     val uiBg = if (darkMode) Color(0xFF1E1E1E) else Color.White
@@ -463,35 +468,69 @@ fun CameraWithOverlay() {
         // ═════════════════════════════════════════
         // ── RIGHT SIDE TOOLBAR ──
         // ═════════════════════════════════════════
-        Column(
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
-                .background(uiBg.copy(0.9f), RoundedCornerShape(16.dp))
-                .padding(vertical = 8.dp, horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            ToolButton(Icons.Default.SwapHoriz, "Flip",
-                active = overlayFlipped, fg = uiFg, secondary = uiSecondary) {
-                overlayFlipped = !overlayFlipped
+            // Toggle arrow bar
+            Box(
+                modifier = Modifier
+                    .width(24.dp)
+                    .height(48.dp)
+                    .background(
+                        uiBg.copy(0.7f),
+                        RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp)
+                    )
+                    .clickable { toolbarExpanded = !toolbarExpanded },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (toolbarExpanded)
+                        Icons.AutoMirrored.Filled.ArrowForward
+                    else Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = if (toolbarExpanded) "Ocultar" else "Mostrar",
+                    tint = uiSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
-            ToolButton(Icons.Default.GridOn, "Grid",
-                active = showGrid, fg = uiFg, secondary = uiSecondary) {
-                showGrid = !showGrid
-                if (showGrid) activeToolPanel = ToolPanel.GRID
-                else if (activeToolPanel == ToolPanel.GRID) activeToolPanel = ToolPanel.NONE
-            }
-            ToolButton(Icons.Default.Opacity, "Opacity",
-                active = activeToolPanel == ToolPanel.OPACITY, fg = uiFg, secondary = uiSecondary) {
-                activeToolPanel = if (activeToolPanel == ToolPanel.OPACITY) ToolPanel.NONE else ToolPanel.OPACITY
-            }
-            ToolButton(Icons.Default.Straighten, "Outline",
-                active = overlayOutline, fg = uiFg, secondary = uiSecondary) {
-                overlayOutline = !overlayOutline
-                if (!overlayOutline) outlineBitmap = null
-            }
-            ToolButton(Icons.Default.Tune, "Adjust",
-                active = activeToolPanel == ToolPanel.ADJUST, fg = uiFg, secondary = uiSecondary) {
-                activeToolPanel = if (activeToolPanel == ToolPanel.ADJUST) ToolPanel.NONE else ToolPanel.ADJUST
+
+            // Toolbar content
+            AnimatedVisibility(
+                visible = toolbarExpanded,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier.padding(end = 12.dp)
+                        .background(uiBg.copy(0.9f), RoundedCornerShape(16.dp))
+                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    ToolButton(Icons.Default.SwapHoriz, "Flip",
+                        active = overlayFlipped, fg = uiFg, secondary = uiSecondary) {
+                        overlayFlipped = !overlayFlipped
+                    }
+                    ToolButton(Icons.Default.GridOn, "Grid",
+                        active = showGrid, fg = uiFg, secondary = uiSecondary) {
+                        showGrid = !showGrid
+                        if (showGrid) activeToolPanel = ToolPanel.GRID
+                        else if (activeToolPanel == ToolPanel.GRID) activeToolPanel = ToolPanel.NONE
+                    }
+                    ToolButton(Icons.Default.Opacity, "Opacity",
+                        active = activeToolPanel == ToolPanel.OPACITY, fg = uiFg, secondary = uiSecondary) {
+                        activeToolPanel = if (activeToolPanel == ToolPanel.OPACITY) ToolPanel.NONE else ToolPanel.OPACITY
+                    }
+                    ToolButton(Icons.Default.Straighten, "Outline",
+                        active = overlayOutline, fg = uiFg, secondary = uiSecondary) {
+                        overlayOutline = !overlayOutline
+                        if (!overlayOutline) outlineBitmap = null
+                    }
+                    ToolButton(Icons.Default.Tune, "Adjust",
+                        active = activeToolPanel == ToolPanel.ADJUST, fg = uiFg, secondary = uiSecondary) {
+                        activeToolPanel = if (activeToolPanel == ToolPanel.ADJUST) ToolPanel.NONE else ToolPanel.ADJUST
+                    }
+                }
             }
         }
 
